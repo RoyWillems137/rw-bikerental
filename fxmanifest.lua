@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 author 'RoyWillems'
-description 'Bikerental script voor SunnyDayz'
+description 'Bikerental script'
 
 shared_script '@es_extended/imports.lua'
 
