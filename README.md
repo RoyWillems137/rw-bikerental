@@ -40,7 +40,7 @@ Elke locatie heeft een eigen blip op de map.
 1. Plaats de resource in je `resources`-map.
 2. Voeg toe aan je `server.cfg`:
     ```cfg
-    ensure fietsverhuur
+    ensure rw-bikerental
     ```
 3. Zorg dat `ox_lib` en `ox_target` geïnstalleerd en gestart zijn vóór deze resource.
 
