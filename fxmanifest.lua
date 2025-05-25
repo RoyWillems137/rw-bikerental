@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 author 'RoyWillems'
-description 'Bikerental script'
+description 'Bikerental script voor SunnyDayz'
 
 shared_script '@es_extended/imports.lua'
 
@@ -13,7 +13,10 @@ client_script {
     'client.lua'
 }
 
-server_script 'server.lua'
+server_script {
+    'config.lua',
+    'server.lua'
+}
 
 dependencies {
     'ox_target',

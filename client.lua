@@ -1,26 +1,7 @@
 local spawnedBikes = {}
 
-CreateThread(function()
-    for i, loc in pairs(Config.BikeSpawns) do
-        for j = 1, #loc.coords do
-            local key = tostring(i) .. "_" .. tostring(j)
-            spawnStaticBike(key, loc.model[j], loc.coords[j])
-        end
-
-        -- Voeg blip toe
-        local blip = AddBlipForCoord(loc.blip)
-        SetBlipSprite(blip, Config.BlipSprite)
-        SetBlipDisplay(blip, 4)
-        SetBlipScale(blip, 0.7)
-        SetBlipColour(blip, Config.BlipColor)
-        SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString(Config.BlipName)
-        EndTextCommandSetBlipName(blip)
-    end
-end)
-
-function spawnStaticBike(index, modelName, coords)
+-- Fietsen spawnen op basis van serverevent
+RegisterNetEvent('rw-bikerental:spawnStaticBike', function(index, modelName, coords)
     local model = joaat(modelName)
     RequestModel(model)
     while not HasModelLoaded(model) do Wait(0) end
@@ -30,7 +11,6 @@ function spawnStaticBike(index, modelName, coords)
     SetVehicleColours(bike, 111, 111)
     SetVehicleExtraColours(bike, 0, 0)
     SetVehicleEnveffScale(bike, 0.0)
-    SetVehicleOnGroundProperly(bike)
     FreezeEntityPosition(bike, true)
     SetVehicleDoorsLocked(bike, 2)
     SetVehicleNumberPlateText(bike, "RENTAL")
@@ -46,8 +26,26 @@ function spawnStaticBike(index, modelName, coords)
             end
         }
     })
-end
+end)
 
+-- Krijg spawns van server
+CreateThread(function()
+    TriggerServerEvent('rw-bikerental:requestBikeSpawns')
+end)
+-- Blips aanmaken voor alle locaties
+RegisterNetEvent('rw-bikerental:createBlip', function(coords)
+    local blip = AddBlipForCoord(coords)
+    SetBlipSprite(blip, Config.BlipSprite)
+    SetBlipDisplay(blip, 4)
+    SetBlipScale(blip, 0.7)
+    SetBlipColour(blip, Config.BlipColor)
+    SetBlipAsShortRange(blip, true)
+    BeginTextCommandSetBlipName("STRING")
+    AddTextComponentString(Config.BlipName)
+    EndTextCommandSetBlipName(blip)
+end)
+
+-- Menu openen
 function openRentalMenu(index)
     local menuOptions = {}
 
@@ -70,6 +68,7 @@ function openRentalMenu(index)
     lib.showContext('bike_rental_menu')
 end
 
+-- Checken of speler kan betalen
 function checkAndStartRental(index, rentalData)
     ESX.TriggerServerCallback('rw-bikerental:canAfford', function(canAfford)
         if canAfford then
@@ -79,13 +78,14 @@ function checkAndStartRental(index, rentalData)
                 title = 'Fiets verhuur',
                 description = 'Je hebt niet genoeg geld (€' .. rentalData.price .. ')',
                 position = 'center-left',
-                icon = 'fa-solid fa-bicycle', 
-                duration = 5000, 
+                icon = 'fa-solid fa-bicycle',
+                duration = 5000,
             })
         end
     end, rentalData.price)
 end
 
+-- Fiets geven
 function startRental(index, rentalData)
     local data = spawnedBikes[index]
     if not data then return end
@@ -110,12 +110,12 @@ function startRental(index, rentalData)
 
     TriggerServerEvent('rw-bikerental:pay', rentalData.price)
 
-   	lib.notify({
+    lib.notify({
         title = 'Fiets verhuur',
         description = 'Je hebt de fiets gehuurd voor €' .. rentalData.price,
         position = 'center-left',
-        icon = 'fa-solid fa-bicycle', 
-        duration = 5000, 
+        icon = 'fa-solid fa-bicycle',
+        duration = 5000,
     })
 
     CreateThread(function()
@@ -125,11 +125,12 @@ function startRental(index, rentalData)
                 title = 'Fiets verhuur',
                 description = 'Je huurfiets is verlopen.',
                 position = 'center-left',
-                icon = 'fa-solid fa-bicycle', 
-                duration = 5000, 
+                icon = 'fa-solid fa-bicycle',
+                duration = 5000,
             })
             DeleteEntity(rentedBike)
         end
-        spawnStaticBike(index, model, data.coords)
+        -- Vraag server om fiets terug te plaatsen
+        TriggerServerEvent('rw-bikerental:respawnBike', index)
     end)
 end
